@@ -471,7 +471,7 @@ def download(urlid):
     game = Game()
     game.print = Style.CASUAL
     for child in root:
-        print(child.tag, child.attrib)
+        # print(child.tag, child.attrib)
         if child.tag == "GO":
 
             print(game.go(child.attrib))
