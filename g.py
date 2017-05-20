@@ -4,6 +4,7 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import math
+import re
 
 from enum import Enum
 from functools import cmp_to_key
@@ -130,9 +131,12 @@ class Player:
         "新人", "９級", "８級", "７級", "６級", "５級", "４級", "３級", "２級", "１級",
         "初段", "二段", "三段", "四段", "五段", "六段", "七段", "八段", "九段", "十段",
         "天鳳", "RESERVED..."]
+    re_ja = re.compile("[^a-zA-Z0-9_\s]")
 
     def __init__(self, name):
         self.name = urllib.parse.unquote(name)
+        self.nameStr = "{0:<{1}}".format(
+            self.name, 14 - len(self.re_ja.findall(self.name)))
         self.dan = None
         self.rate = None
 
@@ -177,24 +181,25 @@ class Game:
         return "L{0} {1}".format(self.lobby, self.type)
 
     def setUn(self, attrib):
-        self.player.append(Player(attrib["n0"]))
-        self.player.append(Player(attrib["n1"]))
-        self.player.append(Player(attrib["n2"]))
-        if not(self.typecode & 0x10):
-            self.player.append(Player(attrib["n3"]))
-        dan = list(map(int, attrib["dan"].split(",")))
-        rate = list(map(float, attrib["rate"].split(",")))
-        for i, d in enumerate(dan):
-            self.player[i].setDan(d)
-        for i, r in enumerate(rate):
-            self.player[i].rate = r
+        if "rate" in attrib:
+            self.player.append(Player(attrib["n0"]))
+            self.player.append(Player(attrib["n1"]))
+            self.player.append(Player(attrib["n2"]))
+            if not(self.typecode & 0x10):
+                self.player.append(Player(attrib["n3"]))
+            dan = list(map(int, attrib["dan"].split(",")))
+            rate = list(map(float, attrib["rate"].split(",")))
+            for i, d in enumerate(dan):
+                self.player[i].setDan(d)
+            for i, r in enumerate(rate):
+                self.player[i].rate = r
 
     def strPlayers(self):
         text = ""
         hougaku = "東南西北"
         for i, p in enumerate(self.player):
             text += "{0}:{1} {2} R{3}\n".format(
-                hougaku[i], p.name, p.dan, p.rate)
+                hougaku[i], p.nameStr, p.dan, p.rate)
         return text
 
     def init(self, attrib):
@@ -323,7 +328,7 @@ class Round:
         f = Fulou(m)
 
         return '{3} {0} {1}順目 {2}'.format(
-            self.game.player[who].name, len(self.player_mopai[who]), f.pai, f.type_str())
+            self.game.player[who].nameStr, len(self.player_mopai[who]), f.pai, f.type_str())
 
     def ba_tostr(self, b):
         b = list(map(int, b.split(",")))
@@ -332,11 +337,21 @@ class Round:
     def sc_tostr(self, sc, *, owari=False):
         text = ""
         sc = list(map(float, sc.split(",")))
-        sc = list(zip(*[iter(sc)] * 2))
-        for k, s in enumerate(sc):
-            text += self.game.player[k].name + " " + str(int(s[0])) + "00 "
+        hito = range(0, 4)
+        sc = list(zip(*[iter(sc)] * 2, hito))
+        if owari:
+            sc.sort(key=lambda x: x[0], reverse=True)
+        else:
+            sc.sort(key=lambda x: x[0] + x[1], reverse=True)
+
+        for s in sc:
+            name = self.game.player[s[2]].nameStr
+            
+            text += "{0} {1:>4d}00".format(name, int(s[0]))
             if s[1] != 0 and not owari:
-                text += ("(+"if s[1] > 0 else "(") + str(int(s[1])) + "00)"
+                text += ("(+"if s[1] > 0 else "(")
+                text += "{0:d}00) -> {1:d}00".format(
+                    int(s[1]), int(s[0] + s[1]))
             elif owari:
                 text += ("(+"if s[1] > 0 else "(") + str(s[1]) + ")"
             text += "\n"
@@ -346,7 +361,7 @@ class Round:
         step = int(attrib["step"])
         who = int(attrib["who"])
         if step == 1:
-            return "立直 {0} {1}順目".format(self.game.player[who].name, len(self.player_mopai[who]))
+            return "立直 {0} {1}順目".format(self.game.player[who].nameStr, len(self.player_mopai[who]))
 
     def ryuukyoku(self, attrib):
         text = "流局"
@@ -456,6 +471,7 @@ def download(urlid):
     game = Game()
     game.print = Style.CASUAL
     for child in root:
+        print(child.tag, child.attrib)
         if child.tag == "GO":
 
             print(game.go(child.attrib))
@@ -492,4 +508,8 @@ def download(urlid):
 
 
 if __name__ == '__main__':
-    download("2017042101gm-00c1-0000-4b052ac7")
+    input_text = input()
+    re_id = re.compile("[0-9]{10}gm-[0-9a-f]{4}-[0-9]{4}-[0-9a-f]{8}")
+    ids = re_id.findall(input_text)
+    for id in ids:
+        download(id)
