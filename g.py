@@ -133,6 +133,12 @@ class Player:
 
     def __init__(self, name):
         self.name = urllib.parse.unquote(name)
+        self.dan = None
+        self.rate = None
+
+    def setDan(self, val):
+
+        self.dan = self.DAN[val] if val < len(self.DAN) else ""
 
 
 class Game:
@@ -144,34 +150,52 @@ class Game:
         self.type = ""
         self.typecode = None
         self.Style = Style.FORMAL
+        self.player = []  # type: List[Player]
+        self.lobby = None
 
-    def go(self, type):
-        self.typecode = type
-        self.isSanma = True if type & 0x10 else False
-        self.grade = ((type & 0x80) >> 7) + ((type & 0x20) >> 4)
+    def go(self, attrib):
+        self.typecode = int(attrib["type"])
+        self.lobby = int(attrib["lobby"])
+        go_val = self.typecode
+        self.is_sanma = True if go_val & 0x10 else False
+        self.grade = ((go_val & 0x80) >> 7) + ((go_val & 0x20) >> 4)
 
-        if self.isSanma:
+        if self.is_sanma:
             self.type += "三"
 
         self.type += "般上特鳳"[self.grade]
-        if type & 8:
+        if go_val & 8:
             self.type += "南"
         else:
             self.type += "東"
-        if not(type & 4):
+        if not(go_val & 4):
             self.type += "喰"
-        if not(type & 2):
+        if not(go_val & 2):
             self.type += "赤"
-        if type & 0x40:
+        if go_val & 0x40:
             self.type += "速"
+        return "L{0} {1}".format(self.lobby, self.type)
 
-    def un(self, attrib):
-        self.player = []  # type: List[Player]
+    def setUn(self, attrib):
         self.player.append(Player(attrib["n0"]))
         self.player.append(Player(attrib["n1"]))
         self.player.append(Player(attrib["n2"]))
         if not(self.typecode & 0x10):
             self.player.append(Player(attrib["n3"]))
+        dan = list(map(int, attrib["dan"].split(",")))
+        rate = list(map(float, attrib["rate"].split(",")))
+        for i, d in enumerate(dan):
+            self.player[i].setDan(d)
+        for i, r in enumerate(rate):
+            self.player[i].rate = r
+
+    def strPlayers(self):
+        text = ""
+        hougaku = "東南西北"
+        for i, p in enumerate(self.player):
+            text += "{0}:{1} {2} R{3}\n".format(
+                hougaku[i], p.name, p.dan, p.rate)
+        return text
 
     def init(self, attrib):
 
@@ -195,10 +219,9 @@ class Game:
 
     def ryuukyoku(self, attrib):
         return self.current_round.ryuukyoku(attrib)
-    
-    def reach(self,attrib):
-        return self.current_round.reach(attrib)
 
+    def reach(self, attrib):
+        return self.current_round.reach(attrib)
 
 
 class Round:
@@ -318,8 +341,8 @@ class Round:
                 text += ("(+"if s[1] > 0 else "(") + str(s[1]) + ")"
             text += "\n"
         return text
-    
-    def reach(self,attrib):
+
+    def reach(self, attrib):
         step = int(attrib["step"])
         who = int(attrib["who"])
         if step == 1:
@@ -434,10 +457,11 @@ def download(urlid):
     game.print = Style.CASUAL
     for child in root:
         if child.tag == "GO":
-            print(game.go(int(child.attrib["type"])))
-            print(game.type)
+
+            print(game.go(child.attrib))
         elif (child.tag)[0:2] == "UN":
-            print(game.un(child.attrib))
+            game.setUn(child.attrib)
+            print(game.strPlayers())
         elif (child.tag) == "TAIKYOKU":
             pass
         elif child.tag == "INIT":
@@ -445,12 +469,12 @@ def download(urlid):
         elif child.tag == "AGARI":
             print(game.agari(child.attrib))
         elif child.tag in {"DORA"}:
-            #print(child.tag, child.attrib)
+            # print(child.tag, child.attrib)
             pass
         elif child.tag == "REACH":
-            #print(child.attrib)
+            # print(child.attrib)
             temp = game.reach(child.attrib)
-            if temp != None:
+            if temp is not None:
                 print(temp)
         elif (child.tag)[0] in {"T", "U", "V", "W"}:
             game.zimo(child.tag)
@@ -464,7 +488,6 @@ def download(urlid):
             pass
         else:
             print(child.tag, child.attrib)
-
     return
 
 
