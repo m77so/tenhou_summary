@@ -17,6 +17,9 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 ARCHIVE_URL = 'http://e.mjv.jp/0/log/archived.cgi?'
 PLAIN_URL = 'http://e.mjv.jp/0/log/plainfiles.cgi?'
 
+paiTenhoToUnicode = [7, 8, 9, 10, 11, 12, 13, 14, 15, 25, 26, 27, 28, 29,
+                     30, 31, 32, 33, 16, 17, 18, 19, 20, 21, 22, 23, 24, 0, 1, 2, 3, 6, 5, 4]
+
 
 def pstr(num):
     """牌を数字から文字列に変換する"""
@@ -26,22 +29,7 @@ def pstr(num):
 #           "1", "2", "3", "4", "5", "6", "7", "8", "9",
 #           "東", "南", "西", "北", "白", "發", "中"]
 #    return hai[num >> 2]
-    num >>= 2
-
-    if num >= 27:
-        num -= 27
-        if num == 4:
-            num = 6
-        elif num == 6:
-            num = 4
-    else:
-        if 9 <= num < 18:
-            num += 9
-        elif 18 <= num:
-            num -= 9
-        num += 7
-    num = (num) + 0x1f000
-
+    num = paiTenhoToUnicode[num >> 2] + 0x1f000
     return chr(num)
 
 
@@ -67,6 +55,7 @@ class Fulou:
             self.type = self.FulouType.CHI
             t_10 = val >> 10
             t = math.floor(t_10 / 3)
+            t = math.floor(t / 7) * 9 + t % 7
             r = t_10 % 3
             if r == 0:
                 self.pai = "\\" + pstr(t << 2) + pstr((t + 1) <<
@@ -411,8 +400,8 @@ class Round:
 
         for h in dora:
             text += pstr(h)
-        if hasattr(attrib, "doraHaiUra"):
-            uradora = attrib["doraHaiUra"].split(",")
+        if "doraHaiUra" in attrib:
+            uradora = list(map(int, attrib["doraHaiUra"].split(",")))
             text += " 裏ドラ:"
             for h in uradora:
                 text += pstr(h)
@@ -488,6 +477,7 @@ def download(urlid):
         elif child.tag == "INIT":
             print(game.init(child.attrib))
         elif child.tag == "AGARI":
+
             print(game.agari(child.attrib))
         elif child.tag in {"DORA"}:
             # print(child.tag, child.attrib)
