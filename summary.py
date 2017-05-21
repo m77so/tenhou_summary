@@ -29,6 +29,8 @@ def pstr(num):
 #           "1", "2", "3", "4", "5", "6", "7", "8", "9",
 #           "東", "南", "西", "北", "白", "發", "中"]
 #    return hai[num >> 2]
+    if num==16 or num==52 or num==88:
+        return "赤{0}".format(chr(paiTenhoToUnicode[num >> 2] + 0x1f000))
     num = paiTenhoToUnicode[num >> 2] + 0x1f000
     return chr(num)
 
