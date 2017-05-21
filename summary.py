@@ -34,7 +34,12 @@ def pstr(num):
             num = 6
         elif num == 6:
             num = 4
-    num += 7
+    else:
+        if 9 <= num < 18:
+            num += 9
+        elif 18 <= num:
+            num -= 9
+        num += 7
     num = (num) + 0x1f000
 
     return chr(num)
@@ -346,7 +351,7 @@ class Round:
 
         for s in sc:
             name = self.game.player[s[2]].nameStr
-            
+
             text += "{0} {1:>4d}00".format(name, int(s[0]))
             if s[1] != 0 and not owari:
                 text += ("(+"if s[1] > 0 else "(")
