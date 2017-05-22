@@ -466,42 +466,43 @@ def download(urlid):
     root = ET.fromstring(XmlData)
     game = Game()
     game.print = Style.CASUAL
+    text = ""
     for child in root:
-        # print(child.tag, child.attrib)
+        # text += "\n" + child.tag, child.attrib)
         if child.tag == "GO":
 
-            print(game.go(child.attrib))
+            text += "\n" + (game.go(child.attrib)) 
         elif (child.tag)[0:2] == "UN":
             game.setUn(child.attrib)
-            print(game.strPlayers())
+            text += "\n" + (game.strPlayers())
         elif (child.tag) == "TAIKYOKU":
             pass
         elif child.tag == "INIT":
-            print(game.init(child.attrib))
+            text += "\n" + (game.init(child.attrib))
         elif child.tag == "AGARI":
 
-            print(game.agari(child.attrib))
+            text += "\n" + (game.agari(child.attrib))
         elif child.tag in {"DORA"}:
-            # print(child.tag, child.attrib)
+            # text += "\n" + child.tag, child.attrib)
             pass
         elif child.tag == "REACH":
-            # print(child.attrib)
+            # text += "\n" + child.attrib)
             temp = game.reach(child.attrib)
             if temp is not None:
-                print(temp)
+                text += "\n" + (temp)
         elif (child.tag)[0] in {"T", "U", "V", "W"}:
             game.zimo(child.tag)
         elif (child.tag)[0] in {"D", "E", "F", "G"}:
             game.dapai(child.tag)
         elif child.tag == "N":
-            print(game.naki(child.attrib))
+            text += "\n" + game.naki(child.attrib)
         elif child.tag == "RYUUKYOKU":
-            print(game.ryuukyoku(child.attrib))
+            text += "\n" + game.ryuukyoku(child.attrib)
         elif child.tag in {"SHUFFLE", "REACH", "BYE"}:
             pass
         else:
-            print(child.tag, child.attrib)
-    return
+            text += "\n" 
+    return text
 
 
 if __name__ == '__main__':
@@ -509,4 +510,4 @@ if __name__ == '__main__':
     re_id = re.compile("[0-9]{10}gm-[0-9a-f]{4}-[0-9]{4}-[0-9a-f]{8}")
     ids = re_id.findall(input_text)
     for id in ids:
-        download(id)
+        print(download(id))
