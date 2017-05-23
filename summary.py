@@ -472,10 +472,8 @@ def download(urlid):
     game.print = Style.CASUAL
     text = ""
     for child in root:
-
         # text += "\n" + child.tag, child.attrib)
         if child.tag == "GO":
-
             text += "\n" + (game.go(child.attrib)) 
         elif (child.tag)[0:2] == "UN":
             game.setUn(child.attrib)
