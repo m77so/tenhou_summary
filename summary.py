@@ -29,7 +29,7 @@ def pstr(num):
 #           "1", "2", "3", "4", "5", "6", "7", "8", "9",
 #           "東", "南", "西", "北", "白", "發", "中"]
 #    return hai[num >> 2]
-    if num==16 or num==52 or num==88:
+    if num == 16 or num == 52 or num == 88:
         return "赤{0}".format(chr(paiTenhoToUnicode[num >> 2] + 0x1f000))
     num = paiTenhoToUnicode[num >> 2] + 0x1f000
     return chr(num)
@@ -185,10 +185,13 @@ class Game:
                 self.player.append(Player(attrib["n3"]))
             dan = list(map(int, attrib["dan"].split(",")))
             rate = list(map(float, attrib["rate"].split(",")))
+
             for i, d in enumerate(dan):
-                self.player[i].setDan(d)
+                if i < 3 or not self.is_sanma:
+                    self.player[i].setDan(d)
             for i, r in enumerate(rate):
-                self.player[i].rate = r
+                if i < 3 or not self.is_sanma:
+                    self.player[i].rate = r
 
     def strPlayers(self):
         text = ""
@@ -340,8 +343,9 @@ class Round:
         else:
             sc.sort(key=lambda x: x[0] + x[1], reverse=True)
 
-        for s in sc:
-            name = self.game.player[s[2]].nameStr
+        for i, s in enumerate(sc):
+            if i < 3 or not self.game.is_sanma:
+                name = self.game.player[s[2]].nameStr
 
             text += "{0} {1:>4d}00".format(name, int(s[0]))
             if s[1] != 0 and not owari:
@@ -467,7 +471,7 @@ def download(urlid):
     game = Game()
     game.print = Style.CASUAL
     for child in root:
-        # print(child.tag, child.attrib)
+        print(child.tag, child.attrib)
         if child.tag == "GO":
 
             print(game.go(child.attrib))
